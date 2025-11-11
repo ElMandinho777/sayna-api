@@ -34,15 +34,40 @@ router.get('/:id', async (req, res) => {
 });
 
 // CREATE
+// CREATE (evita duplicados de fecha + hora)
 router.post('/', async (req, res) => {
   try {
     const { cliente, fecha, hora, ubicacion = '', direccion } = req.body;
-    if (!cliente || !fecha || !hora || !direccion) return res.status(400).json({ error: 'Faltan campos' });
-    const [result] = await pool.query('INSERT INTO Eventos (cliente, fecha, hora, ubicacion, direccion) VALUES (?, ?, ?, ?, ?)', [cliente, fecha, hora, ubicacion, direccion]);
+
+    if (!cliente || !fecha || !hora || !direccion) {
+      return res.status(400).json({ error: 'Faltan campos' });
+    }
+
+    // ✅ Verificar si ya existe un evento en esa fecha y hora
+    const [existe] = await pool.query(
+      'SELECT * FROM Eventos WHERE fecha = ? AND hora = ?',
+      [fecha, hora]
+    );
+
+    if (existe.length > 0) {
+      return res.status(409).json({ error: 'Ya existe un evento agendado en esa fecha y hora' });
+    }
+
+    // Si no hay conflicto, insertar el evento
+    const [result] = await pool.query(
+      'INSERT INTO Eventos (cliente, fecha, hora, ubicacion, direccion) VALUES (?, ?, ?, ?, ?)',
+      [cliente, fecha, hora, ubicacion, direccion]
+    );
+
     const [rows] = await pool.query('SELECT * FROM Eventos WHERE id_evento = ?', [result.insertId]);
     res.status(201).json(rows[0]);
-  } catch (err) { res.status(500).json({ error: err.message }); }
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
 });
+
 
 // UPDATE
 router.put('/:id', async (req, res) => {
