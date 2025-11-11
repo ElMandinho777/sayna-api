@@ -44,9 +44,10 @@ router.post('/', async (req, res) => {
 
     // ✅ Verificar si ya existe un evento en esa fecha y hora
     const [existe] = await pool.query(
-      'SELECT * FROM Eventos WHERE fecha = ? AND hora = ?',
+      'SELECT * FROM Eventos WHERE fecha = ? AND hora = ? AND estado != "completado"',
       [fecha, hora]
     );
+
 
     if (existe.length > 0) {
       return res.status(409).json({ error: 'Ya existe un evento agendado en esa fecha y hora' });
