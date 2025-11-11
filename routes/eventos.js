@@ -53,22 +53,10 @@ router.post('/', async (req, res) => {
     }
 
     // Si no hay conflicto, insertar el evento
-    // Verificar si ya hay un evento agendado en la misma fecha y hora
-    const [existentes] = await pool.query(
-      "SELECT * FROM Eventos WHERE fecha = ? AND hora = ? AND estado != 'completado'",
-      [fecha, hora]
-    );
-
-    if (existentes.length > 0) {
-      return res.status(409).json({ error: 'Ya existe un evento agendado a esa fecha y hora.' });
-    }
-
-    // Si no hay conflicto, crear el nuevo evento
     const [result] = await pool.query(
       'INSERT INTO Eventos (cliente, fecha, hora, ubicacion, direccion) VALUES (?, ?, ?, ?, ?)',
       [cliente, fecha, hora, ubicacion, direccion]
     );
-
 
     const [rows] = await pool.query('SELECT * FROM Eventos WHERE id_evento = ?', [result.insertId]);
     res.status(201).json(rows[0]);
